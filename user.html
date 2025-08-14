@@ -1,0 +1,448 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Fleet Management System</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet"/>
+  <link rel="stylesheet" href="https://cdn.datatables.net/1.11.5/css/dataTables.bootstrap5.min.css"/>
+  <style>
+    body { padding: 20px; }
+    .expired { background-color: #ffdddd !important; }
+    .expiring { background-color: #fff3cd !important; }
+    #vehicles-table_wrapper { margin-top: 20px; }
+    .dataTables_filter { margin-bottom: 10px; }
+    td.status-cell.expired { font-weight: 600; }
+    td.status-cell.expiring { font-weight: 600; }
+  </style>
+</head>
+<body>
+<div class="container">
+  <h1 class="text-center mb-4">Fleet Management System</h1>
+
+  <div id="login-section">
+    <div class="row justify-content-center">
+      <div class="col-md-6">
+        <div class="card">
+          <div class="card-header"><h3>Login</h3></div>
+          <div class="card-body">
+            <form id="login-form">
+              <div class="mb-3">
+                <label for="username" class="form-label">Username</label>
+                <input type="text" class="form-control" id="username" required/>
+              </div>
+              <div class="mb-3">
+                <label for="password" class="form-label">Password</label>
+                <input type="password" class="form-control" id="password" required/>
+              </div>
+              <button type="submit" class="btn btn-primary">Login</button>
+            </form>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="main-section" style="display:none;">
+    <div class="d-flex justify-content-between mb-4">
+      <h2>Welcome, <span id="user-fullname"></span></h2>
+      <button id="logout-btn" class="btn btn-danger">Logout</button>
+    </div>
+
+    <div class="mb-4">
+      <button class="btn btn-success" data-bs-toggle="modal" data-bs-target="#addVehicleModal">Add Vehicle</button>
+    </div>
+
+    <div class="mb-3">
+      <input type="text" id="search-input" class="form-control" placeholder="Search by registration number..."/>
+    </div>
+
+    <div class="table-responsive">
+      <table id="vehicles-table" class="table table-striped table-bordered">
+        <thead class="table-dark">
+        <tr>
+          <th>Name</th>
+          <th>Secondary Name</th>
+          <th>Registration</th>
+          <th>VIN</th>
+          <th>Inspection</th>
+          <th>Insurance</th>
+          <th>Notification Period</th>
+          <th>Email</th>
+          <th>Notes</th>
+          <th>Actions</th>
+        </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Add/Edit -->
+<div class="modal fade" id="addVehicleModal" tabindex="-1">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Add / Edit Vehicle</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <form id="vehicle-form">
+          <input type="hidden" id="vehicle-id"/>
+          <div class="row">
+            <div class="col-md-6 mb-3">
+              <label for="name" class="form-label">Name</label>
+              <input type="text" class="form-control" id="name" required/>
+            </div>
+            <div class="col-md-6 mb-3">
+              <label for="secondary_name" class="form-label">Secondary Name</label>
+              <input type="text" class="form-control" id="secondary_name"/>
+            </div>
+          </div>
+          <div class="row">
+            <div class="col-md-6 mb-3">
+              <label for="registration_number" class="form-label">Registration Number</label>
+              <input type="text" class="form-control" id="registration_number" required/>
+            </div>
+            <div class="col-md-6 mb-3">
+              <label for="vin" class="form-label">VIN</label>
+              <input type="text" class="form-control" id="vin" required/>
+            </div>
+          </div>
+          <div class="row">
+            <div class="col-md-6 mb-3">
+              <label for="inspection_date" class="form-label">Inspection Date</label>
+              <input type="date" class="form-control" id="inspection_date" required/>
+            </div>
+            <div class="col-md-6 mb-3">
+              <label for="insurance_date" class="form-label">Insurance Date</label>
+              <input type="date" class="form-control" id="insurance_date" required/>
+            </div>
+          </div>
+          <div class="row">
+            <div class="col-md-6 mb-3">
+              <label for="email" class="form-label">Email for Notifications</label>
+              <input type="email" class="form-control" id="email" required/>
+            </div>
+            <div class="col-md-6 mb-3">
+              <label for="notification_period" class="form-label">Notification Period (days)</label>
+              <input type="number" class="form-control" id="notification_period" value="30" required/>
+            </div>
+          </div>
+          <div class="mb-3">
+            <label for="notes" class="form-label">Notes</label>
+            <textarea class="form-control" id="notes" rows="3"></textarea>
+          </div>
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+        <button type="button" class="btn btn-primary" id="save-vehicle-btn">Save Vehicle</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Scripts -->
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://cdn.datatables.net/1.11.5/js/jquery.dataTables.min.js"></script>
+<script src="https://cdn.datatables.net/1.11.5/js/dataTables.bootstrap5.min.js"></script>
+
+<script>
+let currentUser = null;
+const apiBaseUrl = 'http://localhost:8000';
+let vehiclesTable = null;
+let addVehicleModal = null;
+
+document.addEventListener('DOMContentLoaded', function () {
+  addVehicleModal = new bootstrap.Modal(document.getElementById('addVehicleModal'));
+
+  document.getElementById('login-form').addEventListener('submit', function (e) {
+    e.preventDefault();
+    handleLogin();
+  });
+
+  document.getElementById('logout-btn').addEventListener('click', handleLogout);
+  document.getElementById('save-vehicle-btn').addEventListener('click', saveVehicle);
+
+  // Inicjalizacja pustej DataTable z kolumnami i renderami
+  vehiclesTable = $('#vehicles-table').DataTable({
+    data: [],
+    columns: [
+      { data: 'name' },
+      { data: 'secondary_name', defaultContent: '-' },
+      { data: 'registration_number' },
+      { data: 'vin' },
+      { data: 'inspection_date', render: d => formatDateForDisplay(d), className: 'status-cell' },
+      { data: 'insurance_date', render: d => formatDateForDisplay(d), className: 'status-cell' },
+      { data: 'notification_period', render: d => `${d} days` },
+      { data: 'email', defaultContent: '-' },
+      { data: 'notes', defaultContent: '-' },
+      {
+        data: null,
+        orderable: false,
+        searchable: false,
+        render: vehicle => `
+          <div class="btn-group" role="group">
+            <button class="btn btn-sm btn-warning edit-btn" data-id="${vehicle._id}">Edit</button>
+            <button class="btn btn-sm btn-danger delete-btn" data-id="${vehicle._id}">Delete</button>
+            <button class="btn btn-sm btn-primary send-btn" data-id="${vehicle._id}">Wyślij wiadomość</button>
+          </div>
+        `
+      }
+    ],
+    createdRow: function (row, data) {
+      // Kolorowanie na podstawie statusu (przegląd/ubezpieczenie)
+      const inspStatus = getDateStatus(new Date(data.inspection_date), data.notification_period);
+      const insuStatus = getDateStatus(new Date(data.insurance_date), data.notification_period);
+
+      // Wyróżnij komórki dat
+      const inspCell = $('td', row).eq(4);
+      const insuCell = $('td', row).eq(5);
+      inspCell.addClass(inspStatus ? `status-cell ${inspStatus}` : 'status-cell');
+      insuCell.addClass(insuStatus ? `status-cell ${insuStatus}` : 'status-cell');
+
+      // Jeśli którakolwiek data jest expired/expiring – podświetl cały wiersz łagodnie
+      if (inspStatus === 'expired' || insuStatus === 'expired') {
+        $(row).addClass('expired');
+      } else if (inspStatus === 'expiring' || insuStatus === 'expiring') {
+        $(row).addClass('expiring');
+      }
+    }
+  });
+
+  // Wyszukiwanie po rejestracji
+  $('#search-input').on('keyup', function () {
+    vehiclesTable.column(2).search(this.value).draw();
+  });
+
+  // Delegacja zdarzeń dla przycisków w wierszach
+  $('#vehicles-table tbody').on('click', '.edit-btn', function () {
+    const id = $(this).data('id');
+    editVehicle(id);
+  });
+  $('#vehicles-table tbody').on('click', '.delete-btn', function () {
+    const id = $(this).data('id');
+    deleteVehicle(id);
+  });
+  $('#vehicles-table tbody').on('click', '.send-btn', function () {
+    const id = $(this).data('id');
+    sendMessage(id);
+  });
+});
+
+async function handleLogin() {
+  const username = document.getElementById('username').value;
+  const password = document.getElementById('password').value;
+
+  try {
+    const response = await fetch(`${apiBaseUrl}/api/login`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ username, password })
+    });
+
+    if (!response.ok) {
+      alert('Login failed. Please check your credentials.');
+      return;
+    }
+
+    const data = await response.json();
+    currentUser = data.user;
+
+    document.getElementById('user-fullname').textContent = currentUser.full_name;
+    document.getElementById('login-section').style.display = 'none';
+    document.getElementById('main-section').style.display = 'block';
+
+    await loadVehicles();
+  } catch (err) {
+    console.error('Login error:', err);
+  }
+}
+
+function handleLogout() {
+  currentUser = null;
+  document.getElementById('login-section').style.display = 'block';
+  document.getElementById('main-section').style.display = 'none';
+  document.getElementById('username').value = '';
+  document.getElementById('password').value = '';
+  vehiclesTable.clear().draw();
+}
+
+async function loadVehicles() {
+  try {
+    const response = await fetch(`${apiBaseUrl}/api/vehicles`, {
+      method: 'GET',
+      headers: {
+        'Authorization': `Basic ${btoa(`${document.getElementById('username').value}:${document.getElementById('password').value}`)}`
+      }
+    });
+    if (!response.ok) {
+      console.error('Failed to load vehicles');
+      return;
+    }
+    const vehicles = await response.json();
+    renderVehicles(vehicles);
+  } catch (err) {
+    console.error('Error loading vehicles:', err);
+  }
+}
+
+function renderVehicles(vehicles) {
+  // Wyrównaj format dat do YYYY-MM-DD (z ISO)
+  vehicles.forEach(v => {
+    v.inspection_date = formatDateForDisplay(v.inspection_date);
+    v.insurance_date = formatDateForDisplay(v.insurance_date);
+  });
+
+  vehiclesTable.clear();
+  vehiclesTable.rows.add(vehicles).draw();
+}
+
+function editVehicle(vehicleId) {
+  const vehicle = vehiclesTable.data().toArray().find(v => v._id === vehicleId);
+  if (!vehicle) return;
+
+  document.getElementById('vehicle-id').value = vehicle._id;
+  document.getElementById('name').value = vehicle.name;
+  document.getElementById('secondary_name').value = vehicle.secondary_name || '';
+  document.getElementById('registration_number').value = vehicle.registration_number;
+  document.getElementById('vin').value = vehicle.vin;
+  document.getElementById('inspection_date').value = vehicle.inspection_date; // YYYY-MM-DD
+  document.getElementById('insurance_date').value = vehicle.insurance_date;   // YYYY-MM-DD
+  document.getElementById('email').value = vehicle.email || '';
+  document.getElementById('notification_period').value = vehicle.notification_period;
+  document.getElementById('notes').value = vehicle.notes || '';
+
+  addVehicleModal.show();
+}
+
+async function saveVehicle() {
+  const vehicleId = document.getElementById('vehicle-id').value;
+  const method = vehicleId ? 'PUT' : 'POST';
+  const url = vehicleId ? `${apiBaseUrl}/api/vehicles/${vehicleId}` : `${apiBaseUrl}/api/vehicles`;
+
+  const required = ['name', 'registration_number', 'vin', 'inspection_date', 'insurance_date', 'email', 'notification_period'];
+  const missing = required.filter(id => !document.getElementById(id).value);
+  if (missing.length) {
+    alert('Please fill all required fields');
+    return;
+  }
+
+  const vehicleData = {
+    name: document.getElementById('name').value,
+    secondary_name: document.getElementById('secondary_name').value || null,
+    registration_number: document.getElementById('registration_number').value,
+    vin: document.getElementById('vin').value,
+    inspection_date: document.getElementById('inspection_date').value,
+    insurance_date: document.getElementById('insurance_date').value,
+    assigned_user_id: currentUser.id,
+    email: document.getElementById('email').value,
+    notification_period: parseInt(document.getElementById('notification_period').value, 10),
+    notes: document.getElementById('notes').value || null
+  };
+
+  try {
+    const response = await fetch(url, {
+      method,
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Basic ${btoa(`${document.getElementById('username').value}:${document.getElementById('password').value}`)}`
+      },
+      body: JSON.stringify(vehicleData)
+    });
+
+    if (!response.ok) {
+      const err = await response.json().catch(() => ({}));
+      alert(err.detail || 'Error saving vehicle');
+      return;
+    }
+
+    await loadVehicles();
+    addVehicleModal.hide();
+    document.getElementById('vehicle-form').reset();
+    document.getElementById('vehicle-id').value = '';
+  } catch (err) {
+    console.error('Save error:', err);
+  }
+}
+
+async function deleteVehicle(vehicleId) {
+  if (!confirm('Are you sure you want to delete this vehicle?')) return;
+
+  try {
+    const response = await fetch(`${apiBaseUrl}/api/vehicles/${vehicleId}`, {
+      method: 'DELETE',
+      headers: {
+        'Authorization': `Basic ${btoa(`${document.getElementById('username').value}:${document.getElementById('password').value}`)}`
+      }
+    });
+    if (!response.ok) {
+      alert('Error deleting vehicle');
+      return;
+    }
+    await loadVehicles();
+  } catch (err) {
+    console.error('Delete error:', err);
+  }
+}
+
+async function sendMessage(vehicleId) {
+  if (!confirm('Wyślij wiadomość e-mail z danymi tego pojazdu?')) return;
+
+  // znajdź przycisk i pokaż spinner
+  const btn = document.querySelector(`.send-btn[data-id="${vehicleId}"]`);
+  const originalHTML = btn.innerHTML;
+  btn.disabled = true;
+  btn.innerHTML = `<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Wysyłam...`;
+
+  try {
+    const response = await fetch(`${apiBaseUrl}/api/vehicles/${vehicleId}/notify`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Basic ${btoa(`${document.getElementById('username').value}:${document.getElementById('password').value}`)}`
+      }
+    });
+    if (!response.ok) {
+      const err = await response.json().catch(() => ({}));
+      alert(err.detail || 'Błąd wysyłania wiadomości');
+      return;
+    }
+    alert('Wiadomość wysłana');
+  } catch (err) {
+    console.error('Notify error:', err);
+    alert('Błąd wysyłania wiadomości');
+  } finally {
+    // przywróć przycisk
+    btn.disabled = false;
+    btn.innerHTML = originalHTML;
+  }
+}
+
+/* ==== Helpers ==== */
+
+function getDateStatus(targetDate, notificationPeriod) {
+  const today = new Date();
+  // zerujemy godziny, żeby porównanie dni było stabilne
+  today.setHours(0,0,0,0);
+  const d = new Date(targetDate);
+  d.setHours(0,0,0,0);
+  const diffDays = Math.ceil((d.getTime() - today.getTime()) / (1000 * 3600 * 24));
+  if (diffDays < 0) return 'expired';
+  if (diffDays <= (Number(notificationPeriod) || 0)) return 'expiring';
+  return '';
+}
+
+function formatDateForDisplay(dateLike) {
+  // przychodzi jako ISO (np. "2025-08-01T00:00:00"), zamieniamy na YYYY-MM-DD
+  const d = new Date(dateLike);
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${y}-${m}-${day}`;
+}
+</script>
+</body>
+</html>
